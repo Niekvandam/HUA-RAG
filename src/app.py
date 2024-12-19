@@ -10,7 +10,7 @@ from haystack.document_stores.types.policy import DuplicatePolicy
 from haystack.components.writers import DocumentWriter
 from haystack.components.builders import PromptBuilder
 from haystack.components.generators import OpenAIGenerator
-from prompts import QUERY_REPHRASE_TEMPLATE, QUERY_ANSWER_TEMPLATE
+from prompts import QUERY_REPHRASE_TEMPLATE, QUERY_ANSWER_TEMPLATE, SYSTEM_PROMPT
 from haystack.components.converters import OutputAdapter
 from haystack_integrations.components.retrievers.pinecone import PineconeEmbeddingRetriever
 from haystack import Pipeline
@@ -66,7 +66,7 @@ def create_qa_pipeline() -> Pipeline:
     answer_builder = PromptBuilder(template=QUERY_ANSWER_TEMPLATE)
 
     rephrase_llm = OpenAIGenerator()
-    answer_llm = OpenAIGenerator()
+    answer_llm = OpenAIGenerator(system_prompt=SYSTEM_PROMPT)
 
     rephrase_output_adapter = create_llm_output_adapter()
 
