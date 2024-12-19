@@ -16,7 +16,6 @@ from haystack_integrations.components.retrievers.pinecone import PineconeEmbeddi
 from haystack import Pipeline
 from haystack.dataclasses import Document
 
-
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
@@ -107,6 +106,15 @@ for message in st.session_state.messages:
             with st.expander("Sources"):
                 for source in message["sources"]:
                     st.markdown(f"- `{source}`")
+                if "image_paths" in message:
+                    for image_path in message["image_paths"]:
+                        st.image(image_path)
+
+                if "archive_numbers" in message:
+                    st.markdown("Archive Numbers:")
+                    for archive_number in message["archive_numbers"]:
+                        st.markdown(f"- {archive_number}")
+
 
 
 # User Input & Query Logic
@@ -123,15 +131,38 @@ if query := st.chat_input("Ask a question about the documents"):
         bot_response = response.get("answer_llm").get("replies")[0]
         source_documents = response.get("pinecone_retriever").get("documents")
         
-        # Extract source file paths from Document objects
-        source_paths = [doc.meta.get("file_path", "unknown") for doc in source_documents if isinstance(doc, Document)] # added a check if it is of type document
+        # Extract source file paths, image paths and archive numbers from Document objects
+        source_paths = []
+        image_paths = set()
+        archive_numbers = set()
+        for doc in source_documents:
+            if isinstance(doc, Document):
+                print(doc.meta)
+                print("------------------------------------------------")
+                image_paths.add(doc.meta.get("representatieve\nafbeelding", None))
+                archive_numbers.add(doc.meta.get("invnr", "unknown")) # assuming your key for archive number is invnr
         
+        # Filter out any None image paths
+        image_paths = [path for path in image_paths if path is not None]
+
+
     except Exception as e:
         bot_response = f"An error occurred: {e}"
         source_paths = []  # Ensure source_paths is initialized even if there's an error
+        image_paths = []
+        archive_numbers = []
+
 
     # Add bot's response and sources to chat history
-    st.session_state.messages.append({"role": "assistant", "content": bot_response, "sources": source_paths})
+    st.session_state.messages.append(
+        {
+            "role": "assistant",
+            "content": bot_response,
+            "sources": source_paths,
+            "image_paths": image_paths,
+            "archive_numbers": archive_numbers
+        }
+    )
 
     # Display bot response in a chat message
     with st.chat_message("assistant"):
@@ -139,4 +170,12 @@ if query := st.chat_input("Ask a question about the documents"):
         if source_paths:
             with st.expander("Sources"):
                 for source in source_paths:
-                     st.markdown(f"- `{source}`")
+                    st.markdown(f"- `{source}`")
+                if image_paths:
+                    for image_path in image_paths:
+                       st.image(image_path)
+
+                if archive_numbers:
+                     st.markdown("Archive Numbers:")
+                     for archive_number in archive_numbers:
+                        st.markdown(f"- {archive_number}")
