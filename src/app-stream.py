@@ -10,13 +10,12 @@ from haystack.document_stores.types.policy import DuplicatePolicy
 from haystack.components.writers import DocumentWriter
 from haystack.components.builders import PromptBuilder
 from haystack.components.generators import OpenAIGenerator
-from prompts import QUERY_REPHRASE_TEMPLATE, QUERY_ANSWER_TEMPLATE, SYSTEM_PROMPT, SYSTEM_PROMPT_2
+from prompts import QUERY_REPHRASE_TEMPLATE, QUERY_ANSWER_TEMPLATE, SYSTEM_PROMPT, SYSTEM_PROMPT_2, SYSTEM_PROMPT_3, SYSTEM_PROMPT_4
 from haystack.components.converters import OutputAdapter
 from haystack_integrations.components.retrievers.pinecone import PineconeEmbeddingRetriever
 from haystack import Pipeline
 from haystack.dataclasses import Document, StreamingChunk
 from typing import List, Tuple
-
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
@@ -61,7 +60,7 @@ def create_qa_pipeline(streaming_callback) -> Pipeline:
 
     query_rephrase_builder = PromptBuilder(template=QUERY_REPHRASE_TEMPLATE)
     answer_builder = PromptBuilder(template=QUERY_ANSWER_TEMPLATE)
-    answer_llm = OpenAIGenerator(system_prompt=SYSTEM_PROMPT_2, streaming_callback=streaming_callback)
+    answer_llm = OpenAIGenerator(system_prompt=SYSTEM_PROMPT_4, streaming_callback=streaming_callback)
     rephrase_llm = OpenAIGenerator()
     rephrase_output_adapter = create_llm_output_adapter()
     question_embedder = create_text_embedder()
@@ -84,11 +83,11 @@ def create_qa_pipeline(streaming_callback) -> Pipeline:
 
     return pipeline
 
-st.title("Document Chatbot")
+st.title("Virtuele Assistent van Het Utrechts Archief")
 
 # Initialize chat history
 if "messages" not in st.session_state:
-    st.session_state.messages = []
+    st.session_state.messages = [{"role":"assistant", "content": "Welkom bij ons archief! Waar ben je naar op zoek?"}]
 
 def create_streaming_callback(message_placeholder):
     full_response = ""
@@ -136,7 +135,7 @@ def get_message_history():
 def get_haystack_chat_history():
     history = get_message_history()
     messages = []
-    messages.append(ChatMessage.from_system(SYSTEM_PROMPT_2))
+    messages.append(ChatMessage.from_system(SYSTEM_PROMPT_4))
     for message in history:
         print(history)
         if message.get("role") == "user":
@@ -153,7 +152,7 @@ col1, _ = st.columns([3, 1])
 # Display chat messages from history in the left column
 with col1:
     for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
+        with st.chat_message(message["role"], avatar="https://i.imgur.com/sfak3QI.png"):
             st.markdown(message["content"])
 
 # User query
@@ -173,7 +172,7 @@ if query:
 
     # Prepare streaming callback
     with col1:
-        with st.chat_message("assistant"):
+        with st.chat_message("assistant", avatar="https://i.imgur.com/sfak3QI.png"):
             message_placeholder = st.empty()
             streaming_callback, get_data = create_streaming_callback(message_placeholder)
             
@@ -215,9 +214,9 @@ if query:
     if archive_numbers:
         st.sidebar.markdown("### Sources")
         for i, source in enumerate(archive_numbers):
-            st.sidebar.write(f"**Invnr:** {archive_numbers[i]}")
             if image_paths[i]:
                 st.sidebar.image(image_paths[i], use_container_width=True)
+            st.sidebar.markdown(f"<small>**Invnr:** {archive_numbers[i]}</small>", unsafe_allow_html=True)
             # Optional: Add a horizontal divider for clarity
             if i < len(archive_numbers) - 1:
                 st.sidebar.markdown("---")
